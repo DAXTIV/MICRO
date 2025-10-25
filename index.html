@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curva de Indiferencia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Warm Neutrals & Olive -->
+    <!-- Application Structure Plan: He diseñado esta SPA no como una presentación lineal, sino como una herramienta de aprendizaje interactiva. La estructura fluye desde la definición (¿Qué es?) al núcleo de la aplicación (El Explorador Interactivo) y luego a los conceptos teóricos (Conceptos Clave). El 'Explorador' es el protagonista: permite al usuario ELEGIR un nivel de satisfacción (una curva) y luego USAR un deslizador para moverse a lo largo de ella. Esto demuestra interactivamente el 'trade-off' (Pizza vs. Refresco) mientras el texto confirma que la satisfacción es 'Constante'. Esta experiencia activa es mucho más efectiva para la comprensión que simplemente leer el texto de la diapositiva. La sección de 'Conceptos Clave' desglosa la teoría (Utilidad Ordinal, propiedades) en tarjetas digeribles, reforzando lo que el usuario acaba de experimentar. -->
+    <!-- Visualization & Content Choices: 
+        1. Report Info: 'combinaciones del satisfactor X(pizza) y el satisfactor Y(refresco) que genera igual utilidad'. Goal: Demostrar este 'trade-off' de forma dinámica. Viz/Method: Un gráfico de dispersión con línea suavizada de Chart.js (Canvas). Interaction: Un deslizador de HTML (<input type="range">) controla el valor de 'Pizza (X)'. El JS recalcula el valor 'Y' necesario usando una fórmula (Y = Nivel_Utilidad / X) para mantenerse en la curva seleccionada. El gráfico y los indicadores de texto se actualizan en tiempo real. Justification: Permite al usuario 'sentir' la pendiente negativa y el concepto de 'igual satisfacción'. Library: Chart.js.
+        2. Report Info: 'curva... superior muestra un mayor grado de satisfacción... (curva I, II, III)'. Goal: Visualizar el 'mapa' de indiferencia. Viz/Method: El mismo gráfico de Chart.js. Interaction: Tres botones ('Nivel I', 'Nivel II', 'Nivel III') que representan las curvas. Al hacer clic, el JS recalcula los datos de la curva activa, la resalta y atenúa las otras. Justification: Muestra claramente la jerarquía (más alto es mejor) y permite al usuario explorar diferentes niveles. Library: Chart.js.
+        3. Report Info: 'utilidad ordinal, más que una medida cardinal'. Goal: Explicar este concepto abstracto. Viz/Method: Una tarjeta de HTML/Tailwind con texto claro e iconos Unicode (ej. 🥇🥈🥉 vs 10, 20, 30) para crear una distinción visual. Interaction: Ninguna, es un bloque de texto explicativo. Justification: Después de la experiencia interactiva, el usuario está preparado para esta explicación teórica. El texto es más efectivo aquí que un gráfico complejo. Library: HTML/Tailwind.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .nav-button {
+            transition: all 0.2s ease-in-out;
+        }
+        .nav-button.active {
+            background-color: #4d7c0f; 
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.1);
+        }
+        .nav-button:not(.active):hover {
+            background-color: #f0fdf4;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-lime-800">Curvas de Indiferencia</h1>
+            <div class="flex space-x-2">
+                <a href="#intro" class="px-3 py-1 rounded-md text-sm font-medium text-stone-600 hover:text-lime-700 hover:bg-lime-50">Intro</a>
+                <a href="#explorer" class="px-3 py-1 rounded-md text-sm font-medium text-stone-600 hover:text-lime-700 hover:bg-lime-50">Explorador</a>
+                <a href="#concepts" class="px-3 py-1 rounded-md text-sm font-medium text-stone-600 hover:text-lime-700 hover:bg-lime-50">Conceptos</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
+        <section id="intro" class="mb-12 md:mb-16 scroll-mt-20">
+            <div class="max-w-3xl mx-auto text-center bg-white p-8 rounded-xl shadow-lg border border-stone-200">
+                <h2 class="text-3xl md:text-4xl font-bold text-lime-800 mb-4">¿Qué es una Curva de Indiferencia?</h2>
+                <p class="text-lg md:text-xl text-stone-600">
+                    Es una herramienta que usan los economistas para mostrar un "mapa" de tus gustos. Una curva de indiferencia conecta todas las combinaciones de dos bienes (como Pizza y Refresco) que te darían exactamente el <strong>mismo nivel de satisfacción</strong>.
+                </p>
+                <p class="text-lg md:text-xl text-stone-600 mt-4">
+                    Si dos canastas de bienes están en la misma curva, eres "indiferente" entre ellas... ¡te hacen igual de feliz!
+                </p>
+            </div>
+        </section>
+
+        <section id="explorer" class="mb-12 md:mb-16 bg-white p-6 md:p-10 rounded-xl shadow-2xl border border-stone-200 scroll-mt-20">
+            <h2 class="text-3xl md:text-4xl font-bold text-lime-800 mb-2 text-center">Explorador Interactivo</h2>
+            <p class="text-lg text-stone-600 text-center mb-6">Prueba tú mismo: Mueve el deslizador y cambia de nivel para ver cómo cambian las combinaciones.</p>
+
+            <div class="mb-6 flex flex-col sm:flex-row justify-center items-center space-y-3 sm:space-y-0 sm:space-x-4" id="satisfaction-buttons">
+                <button data-level="100" class="nav-button w-full sm:w-auto px-6 py-3 font-semibold text-lime-800 bg-lime-100 border border-lime-300 rounded-lg shadow-sm">
+                    Nivel de Satisfacción I (Bajo)
+                </button>
+                <button data-level="200" class="nav-button active w-full sm:w-auto px-6 py-3 font-semibold text-lime-800 bg-lime-100 border border-lime-300 rounded-lg shadow-sm">
+                    Nivel de Satisfacción II (Medio)
+                </button>
+                <button data-level="350" class="nav-button w-full sm:w-auto px-6 py-3 font-semibold text-lime-800 bg-lime-100 border border-lime-300 rounded-lg shadow-sm">
+                    Nivel de Satisfacción III (Alto)
+                </button>
+            </div>
+
+            <div class="chart-container mb-6">
+                <canvas id="indifferenceChart"></canvas>
+            </div>
+
+            <div class="max-w-2xl mx-auto">
+                <div class="mb-4">
+                    <label for="pizza-slider" class="block text-lg font-medium text-stone-700 mb-2">Ajustar cantidad de Pizza (Bien X)</label>
+                    <input id="pizza-slider" type="range" min="2" max="25" value="10" class="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-lime-600">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                    <div class="bg-lime-50 p-4 rounded-lg border border-lime-200">
+                        <div class="text-sm font-medium text-lime-700">Pizzas (X)</div>
+                        <div id="pizza-value" class="text-3xl font-bold text-lime-900">10</div>
+                    </div>
+                    <div class="bg-lime-50 p-4 rounded-lg border border-lime-200">
+                        <div class="text-sm font-medium text-lime-700">Refrescos (Y)</div>
+                        <div id="refresco-value" class="text-3xl font-bold text-lime-900">20.0</div>
+                    </div>
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-300">
+                        <div class="text-sm font-medium text-yellow-700">Satisfacción</div>
+                        <div id="satisfaction-level-text" class="text-xl md:text-2xl font-bold text-yellow-900">Nivel II (Constante)</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="concepts" class="scroll-mt-20">
+            <h2 class="text-3xl md:text-4xl font-bold text-lime-800 mb-8 text-center">Conceptos Clave</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-stone-200">
+                    <h3 class="text-2xl font-semibold text-lime-800 mb-3">1. El Mapa de Preferencias</h3>
+                    <p class="text-stone-600">
+                        No tienes solo una curva, sino un "mapa" infinito. La regla es simple: <strong>curvas más altas (más alejadas del origen) significan mayor satisfacción</strong>.
+                    </p>
+                    <p class="text-stone-600 mt-2">
+                        Cualquier combinación en la "Nivel III" es <strong>siempre</strong> preferible a cualquiera en la "Nivel I", porque te da más de ambos bienes.
+                    </p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-stone-200">
+                    <h3 class="text-2xl font-semibold text-lime-800 mb-3">2. Utilidad Ordinal (No Cardinal)</h3>
+                    <p class="text-stone-600">
+                        ¡El orden es lo que importa! La economía no mide la satisfacción con un número exacto (eso sería "cardinal").
+                    </p>
+                    <ul class="text-stone-600 mt-2 list-none space-y-2">
+                        <li><span class="text-red-600 font-medium">❌ Cardinal:</span> "La Nivel II me da 200 puntos de felicidad y la Nivel I me da 100."</li>
+                        <li><span class="text-green-600 font-medium">✅ Ordinal:</span> "Yo <strong>prefiero</strong> la Nivel II a la Nivel I, pero no sé por 'cuánto' más."</li>
+                    </ul>
+                    <p class="text-stone-600 mt-2">
+                        Solo necesitamos clasificar (ordenar) nuestras preferencias.
+                    </p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-stone-200">
+                    <h3 class="text-2xl font-semibold text-lime-800 mb-3">3. Propiedades Principales</h3>
+                    <ul class="text-stone-600 mt-2 list-disc list-inside space-y-2">
+                        <li><strong>Tienen pendiente negativa:</strong> Para obtener más de una cosa (Pizza), debes renunciar a algo de la otra (Refresco) para mantenerte igual de feliz.</li>
+                        <li><strong>No se pueden cruzar:</strong> Un mismo punto (una canasta) no puede darte dos niveles de satisfacción diferentes al mismo tiempo.</li>
+                        <li><strong>Son convexas al origen:</strong> Esto refleja un concepto más avanzado llamado Tasa Marginal de Sustitución decreciente.</li>
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-stone-800 text-stone-300 mt-16 py-8">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p>Aplicación interactiva creada para demostrar los conceptos de la Microeconomía.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const ctx = document.getElementById('indifferenceChart').getContext('2d');
+            let indifferenceChart;
+
+            const slider = document.getElementById('pizza-slider');
+            const pizzaValueEl = document.getElementById('pizza-value');
+            const refrescoValueEl = document.getElementById('refresco-value');
+            const satisfactionLevelEl = document.getElementById('satisfaction-level-text');
+            const buttonsContainer = document.getElementById('satisfaction-buttons');
+
+            let currentLevel = 200; 
+            let currentLevelName = 'Nivel II (Constante)';
+
+            const levels = {
+                100: { name: 'Nivel I (Constante)', color: 'rgba(132, 204, 22, 0.4)', xMin: 2, xMax: 20 },
+                200: { name: 'Nivel II (Constante)', color: 'rgba(77, 124, 15, 0.8)', xMin: 2, xMax: 25 },
+                350: { name: 'Nivel III (Constante)', color: 'rgba(20, 83, 45, 0.6)', xMin: 3, xMax: 30 }
+            };
+
+            function calculateY(x, level) {
+                return level / x;
+            }
+
+            function generateCurveData(level, color) {
+                const data = [];
+                const { xMin, xMax } = levels[level];
+                for (let x = xMin; x <= xMax; x += 0.5) {
+                    data.push({ x: x, y: calculateY(x, level) });
+                }
+                return {
+                    label: `Nivel ${level}`,
+                    data: data,
+                    borderColor: color,
+                    borderWidth: 3,
+                    pointRadius: 0,
+                    tension: 0.4,
+                    type: 'line',
+                    showLine: true
+                };
+            }
+
+            function generateAllCurvesData(activeLevel) {
+                return Object.keys(levels).map(level => {
+                    const levelVal = parseInt(level);
+                    const isActive = levelVal === activeLevel;
+                    const color = isActive ? levels[levelVal].color.replace('0.4', '0.8').replace('0.6', '0.8') : 'rgba(200, 200, 200, 0.3)';
+                    const dataset = generateCurveData(levelVal, color);
+                    dataset.borderWidth = isActive ? 4 : 2;
+                    dataset.label = levels[levelVal].name.replace(' (Constante)', '');
+                    return dataset;
+                });
+            }
+
+            function updateChart() {
+                const currentX = parseFloat(slider.value);
+                const currentY = calculateY(currentX, currentLevel);
+
+                const allCurves = generateAllCurvesData(currentLevel);
+
+                const pointData = {
+                    label: 'Tu Combinación Actual',
+                    data: [{ x: currentX, y: currentY }],
+                    backgroundColor: '#ef4444', 
+                    pointRadius: 8,
+                    pointHoverRadius: 10,
+                    type: 'scatter'
+                };
+
+                indifferenceChart.data.datasets = [...allCurves, pointData];
+                indifferenceChart.update();
+
+                pizzaValueEl.textContent = currentX.toFixed(1);
+                refrescoValueEl.textContent = currentY.toFixed(1);
+                satisfactionLevelEl.textContent = currentLevelName;
+
+                const { xMin, xMax } = levels[currentLevel];
+                slider.min = xMin;
+                slider.max = xMax;
+            }
+
+            function initChart() {
+                indifferenceChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: []
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                position: 'bottom',
+                                title: {
+                                    display: true,
+                                    text: 'Pizza (Bien X)',
+                                    font: { size: 14 }
+                                },
+                                min: 0,
+                                max: 30
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Refresco (Bien Y)',
+                                    font: { size: 14 }
+                                },
+                                min: 0,
+                                max: 60
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += `(${context.parsed.x.toFixed(1)}, ${context.parsed.y.toFixed(1)})`;
+                                        }
+                                        return label;
+                                    }
+                                }
+                            },
+                            legend: {
+                                position: 'top',
+                            }
+                        },
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                    }
+                });
+                updateChart();
+            }
+
+            slider.addEventListener('input', updateChart);
+
+            buttonsContainer.addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if (button && button.dataset.level) {
+                    currentLevel = parseInt(button.dataset.level);
+                    currentLevelName = levels[currentLevel].name;
+
+                    buttonsContainer.querySelectorAll('button').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    button.classList.add('active');
+                    
+                    if (parseFloat(slider.value) < levels[currentLevel].xMin) {
+                        slider.value = levels[currentLevel].xMin;
+                    }
+                    if (parseFloat(slider.value) > levels[currentLevel].xMax) {
+                        slider.value = levels[currentLevel].xMax;
+                    }
+
+                    updateChart();
+                }
+            });
+
+            initChart();
+        });
+    </script>
+</body>
+</html>
